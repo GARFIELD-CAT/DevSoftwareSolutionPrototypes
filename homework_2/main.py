@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from homework_2.models import Request
 
 app = FastAPI()
-FILE_PATH = "request.json"
+FILE_PATH = "requests.json"
 
 
 @app.get("/")
