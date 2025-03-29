@@ -9,8 +9,8 @@ Base = declarative_base()
 class Faculty(Base):
     __tablename__ = "faculties"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
 
     students = relationship("Student", back_populates="faculties", lazy="subquery")
 
@@ -21,8 +21,8 @@ class Faculty(Base):
 class Course(Base):
     __tablename__ = "courses"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
 
     students = relationship("Student", back_populates="courses", lazy="subquery")
 
@@ -33,7 +33,7 @@ class Course(Base):
 class Student(Base):
     __tablename__ = "students"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     last_name = Column(String(128))
     first_name = Column(String(128))
     grade = Column(Integer)

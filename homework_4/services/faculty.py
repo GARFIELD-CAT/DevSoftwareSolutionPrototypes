@@ -1,8 +1,9 @@
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, delete, update
 
 from homework_4.db.models.models import Faculty
+from homework_4.services.entities import OperationStatus
 from homework_4.services.main_service import MainService
 
 
@@ -42,5 +43,37 @@ class FacultyService(MainService):
                 return None
 
             return faculty.scalars().one_or_none()
+
+    async def delete_faculty(self, faculty_id: int) -> OperationStatus:
+        session = self._get_async_session()
+
+        async with (session() as db):
+            result = await db.execute(delete(Faculty).where(Faculty.id == faculty_id))
+
+            await db.commit()
+
+            if result.rowcount > 0:
+                return OperationStatus(status='success', message='Faculty deleted successfully')
+            else:
+                return OperationStatus(status='error', message='Faculty not found')
+
+    async def update_faculty(self, faculty_id: int, **kwargs) -> OperationStatus:
+        session = self._get_async_session()
+
+        async with (session() as db):
+            faculty = await db.execute(select(Faculty).where(Faculty.id == faculty_id))
+
+            faculty = faculty.scalars().one_or_none()
+
+            if faculty is None:
+                return OperationStatus(status='error', message='Faculty not found')
+
+            for key, value in kwargs.items():
+                setattr(faculty, key, value)
+
+            await db.commit()
+
+            return OperationStatus(status='success', message='Faculty updated successfully')
+
 
 faculty_service = FacultyService()
