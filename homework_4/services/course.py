@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from sqlalchemy import select, delete
@@ -20,10 +21,17 @@ class CourseService(MainService):
 
             return course
         except Exception as e:
-            print(f"Ошибка при создании курса: {e}")
             await db.rollback()
+            if isinstance(e, IntegrityError):
+                # SQLITE_CONSTRAINT_UNIQUE ERROR
+                if e.orig.sqlite_errorcode == 2067:
+                    return OperationStatus(
+                        status="error", message="Курс с таким названием уже создан"
+                    )
 
-        return None
+            return OperationStatus(
+                status="error", message=f"Ошибка при создании курса: {e}"
+            )
 
     async def get_course(
         self, course_id: Optional[int] = None, course_name: Optional[str] = None
@@ -45,35 +53,37 @@ class CourseService(MainService):
     async def delete_course(self, course_id: int) -> OperationStatus:
         session = self._get_async_session()
 
-        async with (session() as db):
+        async with session() as db:
             result = await db.execute(delete(Course).where(Course.id == course_id))
 
             await db.commit()
 
             if result.rowcount > 0:
-                return OperationStatus(status='success', message='Course deleted successfully')
+                return OperationStatus(
+                    status="success", message="Course deleted successfully"
+                )
             else:
-                return OperationStatus(status='error', message='Course not found')
+                return OperationStatus(status="error", message="Course not found")
 
     async def update_course(self, course_id: int, **kwargs) -> OperationStatus:
         session = self._get_async_session()
 
-        async with (session() as db):
+        async with session() as db:
             course = await db.execute(select(Course).where(Course.id == course_id))
 
             course = course.scalars().one_or_none()
 
             if course is None:
-                return OperationStatus(status='error', message='Course not found')
+                return OperationStatus(status="error", message="Course not found")
 
             for key, value in kwargs.items():
                 setattr(course, key, value)
 
             await db.commit()
-            # course = await db.refresh(course)
 
-            return OperationStatus(status='success', message='Course updated successfully')
-
+            return OperationStatus(
+                status="success", message="Course updated successfully"
+            )
 
     async def get_unique_courses(self):
         session = self._get_async_session()

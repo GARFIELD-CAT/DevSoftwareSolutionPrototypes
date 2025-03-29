@@ -20,10 +20,8 @@ async def create_student(input: Student):
 
     return student
 
-@student_router.get(
-    "/get_student/{id}",
-    status_code=HTTPStatus.OK
-)
+
+@student_router.get("/get_student/{id}", status_code=HTTPStatus.OK)
 async def get_student(id: int):
     result = await student_service.get_student(id)
 
@@ -32,23 +30,26 @@ async def get_student(id: int):
 
     return result
 
+
 @student_router.delete("/delete_student/{id}", status_code=HTTPStatus.NO_CONTENT)
 async def delete_student(id: int):
     result = await student_service.delete_student(id)
 
-    if result.status == 'error':
+    if result.status == "error":
         raise HTTPException(status_code=404, detail=result.message)
 
     return result
+
 
 @student_router.patch("/update_student/{id}", status_code=HTTPStatus.OK)
 async def update_student(id: int, input: Student):
     result = await student_service.update_student(id, **input.model_dump())
 
-    if result.status == 'error':
+    if result.status == "error":
         raise HTTPException(status_code=404, detail=result.message)
 
     return result
+
 
 @student_router.get("/get_students/", status_code=HTTPStatus.OK)
 async def get_students():

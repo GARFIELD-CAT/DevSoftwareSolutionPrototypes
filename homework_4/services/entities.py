@@ -7,4 +7,4 @@ class OperationStatus:
     message: str
 
     def as_dict(self):
-        return {'status': self.status, "message": self.message}
+        return {"status": self.status, "message": self.message}

@@ -111,7 +111,8 @@ class StudentManager:
                     await db.commit()
                 else:
                     print(
-                        f"Не удалось создать/найти факультет {faculty_name} или курс {course_name}"
+                        f"Не удалось создать/найти факультет {faculty_name} "
+                        f"или курс {course_name}"
                     )
 
             return student
