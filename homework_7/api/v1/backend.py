@@ -51,7 +51,7 @@ async def remove_data_from_db(
     if delete_func is None:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Талбица с именем {table_name} не найдена.",
+            detail=f"Таблица с именем {table_name} не найдена.",
         )
 
     for item_id in input.item_ids:

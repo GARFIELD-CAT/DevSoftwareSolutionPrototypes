@@ -13,8 +13,8 @@ auth_router = APIRouter()
 ACCESS_TOKEN_COOKIE_NAME = "access_token"
 
 
-@auth_router.post("/registration/", status_code=HTTPStatus.OK)
-async def registration(input: User):
+@auth_router.post("/register/", status_code=HTTPStatus.OK)
+async def register(input: User):
     hashed_password = password_service.create_hashed_password(input.password)
 
     user = await user_service.create_user(
