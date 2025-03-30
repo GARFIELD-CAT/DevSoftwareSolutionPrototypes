@@ -17,6 +17,12 @@ class Faculty(Base):
     def __repr__(self):
         return f"{self.id} - {self.name}"
 
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+        }
+
 
 class Course(Base):
     __tablename__ = "courses"
@@ -28,6 +34,12 @@ class Course(Base):
 
     def __repr__(self):
         return f"{self.id} - {self.name}"
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+        }
 
 
 class Student(Base):
@@ -49,6 +61,16 @@ class Student(Base):
             f"{self.grade} - {self.faculty} - {self.course}"
         )
 
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "last_name": self.last_name,
+            "first_name": self.first_name,
+            "grade": self.grade,
+            "faculty": self.faculty,
+            "course": self.course,
+        }
+
 
 class User(Base):
     __tablename__ = "users"
@@ -62,3 +84,13 @@ class User(Base):
 
     def __repr__(self):
         return f"{self.id} - {self.login} - {self.password}"
+
+    def as_dict(self):
+        return {
+            "id": self.id,
+            "login": self.login,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "password": self.password,
+        }

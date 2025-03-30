@@ -1,4 +1,5 @@
 import csv
+from pathlib import Path
 from typing import Optional, Union
 
 from sqlalchemy import delete, func, select
@@ -9,10 +10,12 @@ from homework_6.services.entities import OperationStatus
 from homework_6.services.faculty import faculty_service
 from homework_6.services.main_service import MainService
 
+DEFAULT_CSV_FILE_PATH = Path(__file__).parent.parent / "db/init_data/students.csv"
+
 
 class StudentService(MainService):
-    async def load_from_csv(self, csv_filename="students.csv"):
-        with open(csv_filename, "r", encoding="utf-8") as csvfile:
+    async def load_from_csv(self, csv_file_path: str = DEFAULT_CSV_FILE_PATH):
+        with open(csv_file_path, "r", encoding="utf-8") as csvfile:
             reader = csv.DictReader(csvfile)
 
             for row in reader:
@@ -21,7 +24,7 @@ class StudentService(MainService):
                 except ValueError:
                     grade = 0
 
-                await self.create_student(
+                await self._create_student_from_csv(
                     last_name=row["Фамилия"],
                     first_name=row["Имя"],
                     faculty_name=row["Факультет"],
@@ -29,15 +32,15 @@ class StudentService(MainService):
                     grade=grade,
                 )
 
-        print(f"Данные успешно загружены из csv файла {csv_filename}")
+        print(f"Данные успешно загружены из csv файла {csv_file_path}")
 
     async def create_student(
         self,
         last_name: str,
         first_name: str,
+        grade: Optional[Union[int, float]],
         faculty_id: int,
         course_id: int,
-        grade: Optional[Union[int, float]],
     ):
         session = self._get_async_session()
 
@@ -97,10 +100,12 @@ class StudentService(MainService):
             await db.commit()
 
             if result.rowcount > 0:
+                print(f"success: Student {student_id=} deleted successfully")
                 return OperationStatus(
                     status="success", message="Student deleted successfully"
                 )
             else:
+                print(f"error: Student {student_id=} not found")
                 return OperationStatus(status="error", message="Student not found")
 
     async def update_student(self, student_id: int, **kwargs) -> OperationStatus:
@@ -136,7 +141,8 @@ class StudentService(MainService):
                     )
 
             for key, value in kwargs.items():
-                setattr(student, key, value)
+                if value:
+                    setattr(student, key, value)
 
             await db.commit()
 
@@ -179,6 +185,47 @@ class StudentService(MainService):
             )
 
             return students.scalars().all()
+
+    async def _create_student_from_csv(
+        self,
+        last_name: str,
+        first_name: str,
+        grade: Optional[Union[int, float]],
+        faculty_name: Optional[str] = None,
+        course_name: Optional[str] = None,
+    ):
+        session = self._get_async_session()
+
+        try:
+            async with session() as db:
+                faculty = await faculty_service.get_faculty(faculty_name=faculty_name)
+
+                if faculty is None:
+                    faculty = await faculty_service.create_faculty(faculty_name)
+
+                course = await course_service.get_course(course_name=course_name)
+
+                if course is None:
+                    course = await course_service.create_course(course_name)
+
+                if faculty and course:
+                    student = Student(
+                        last_name=last_name,
+                        first_name=first_name,
+                        faculty=faculty.id,
+                        course=course.id,
+                        grade=grade,
+                    )
+                    db.add(student)
+                    await db.commit()
+
+                return student
+        except Exception as e:
+            await db.rollback()
+
+            return OperationStatus(
+                status="error", message=f"Ошибка при создании студента: {e}"
+            )
 
 
 student_service = StudentService()

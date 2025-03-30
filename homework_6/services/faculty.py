@@ -35,11 +35,22 @@ class FacultyService(MainService):
                 status="error", message=f"Ошибка при создании факультета: {e}"
             )
 
-    async def get_faculty(self, faculty_id: int) -> Optional[Faculty]:
+    async def get_faculty(
+        self, faculty_id: Optional[int] = None, faculty_name: Optional[str] = None
+    ) -> Optional[Faculty]:
         session = self._get_async_session()
 
         async with session() as db:
-            faculty = await db.execute(select(Faculty).where(Faculty.id == faculty_id))
+            if faculty_id:
+                faculty = await db.execute(
+                    select(Faculty).where(Faculty.id == faculty_id)
+                )
+            elif faculty_name:
+                faculty = await db.execute(
+                    select(Faculty).where(Faculty.name == faculty_name)
+                )
+            else:
+                return None
 
             return faculty.scalars().one_or_none()
 
@@ -52,10 +63,12 @@ class FacultyService(MainService):
             await db.commit()
 
             if result.rowcount > 0:
+                print(f"success: Faculty {faculty_id=} deleted successfully")
                 return OperationStatus(
                     status="success", message="Faculty deleted successfully"
                 )
             else:
+                print(f"error: Faculty {faculty_id=} not found")
                 return OperationStatus(status="error", message="Faculty not found")
 
     async def update_faculty(self, faculty_id: int, **kwargs) -> OperationStatus:
@@ -70,7 +83,8 @@ class FacultyService(MainService):
                 return OperationStatus(status="error", message="Faculty not found")
 
             for key, value in kwargs.items():
-                setattr(faculty, key, value)
+                if value:
+                    setattr(faculty, key, value)
 
             await db.commit()
 

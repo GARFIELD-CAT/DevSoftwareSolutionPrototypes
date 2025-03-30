@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 from typing import List
 
@@ -6,8 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from homework_6.schemes.faculty import Faculty, ResponseFaculty
 from homework_6.services.faculty import faculty_service
 from homework_6.services.token import token_service
+from homework_6.storages.cache import cache_storage
 
 faculty_router = APIRouter()
+FACULTY_CACHE_PREFIX_KEY = "user"
 
 
 @faculty_router.post("/create_faculty/", status_code=HTTPStatus.CREATED)
@@ -25,12 +28,21 @@ async def create_faculty(
 async def get_faculty(
     id: int, current_user: str = Depends(token_service.get_auth_cookie)
 ):
-    result = await faculty_service.get_faculty(id)
+    faculty = await cache_storage.get(f"{FACULTY_CACHE_PREFIX_KEY}:{id}")
 
-    if result is None:
-        raise HTTPException(status_code=404, detail="Faculty not found")
+    if faculty:
+        return json.loads(faculty)
+    else:
+        faculty = await faculty_service.get_faculty(id)
 
-    return result
+        if faculty is None:
+            raise HTTPException(status_code=404, detail="Faculty not found")
+
+        await cache_storage.set(
+            f"{FACULTY_CACHE_PREFIX_KEY}:{id}", json.dumps(faculty.as_dict())
+        )
+
+    return faculty
 
 
 @faculty_router.delete("/delete_faculty/{id}", status_code=HTTPStatus.NO_CONTENT)
@@ -41,6 +53,8 @@ async def delete_faculty(
 
     if result.status == "error":
         raise HTTPException(status_code=404, detail=result.message)
+
+    await cache_storage.delete(f"{FACULTY_CACHE_PREFIX_KEY}:{id}")
 
     return result
 
@@ -53,6 +67,8 @@ async def update_faculty(
 
     if result.status == "error":
         raise HTTPException(status_code=404, detail=result.message)
+
+    await cache_storage.delete(f"{FACULTY_CACHE_PREFIX_KEY}:{id}")
 
     return result
 

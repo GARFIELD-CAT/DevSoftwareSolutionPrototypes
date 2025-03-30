@@ -87,7 +87,8 @@ class UserService(MainService):
                 return OperationStatus(status="error", message="User not found")
 
             for key, value in kwargs.items():
-                setattr(user, key, value)
+                if value:
+                    setattr(user, key, value)
 
             await db.commit()
 

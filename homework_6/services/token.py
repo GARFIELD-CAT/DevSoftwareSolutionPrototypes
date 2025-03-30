@@ -6,7 +6,9 @@ from fastapi import Cookie, HTTPException
 
 
 class TokenService:
-    _jwt_secret = "my_secret"  # В реальном приложении должен быть в переменных окружения
+    _jwt_secret = (
+        "my_secret"  # В реальном приложении должен быть в переменных окружения
+    )
     jwt_alg = "HS256"
 
     def create_token(self, data: Dict[str, Any]):

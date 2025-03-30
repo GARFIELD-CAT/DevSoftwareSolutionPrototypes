@@ -1,3 +1,4 @@
+import json
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,8 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from homework_6.schemes.student import Student
 from homework_6.services.student import student_service
 from homework_6.services.token import token_service
+from homework_6.storages.cache import cache_storage
 
 student_router = APIRouter()
+STUDENT_CACHE_PREFIX_KEY = "student"
 
 
 @student_router.post("/create_student/", status_code=HTTPStatus.CREATED)
@@ -28,12 +31,21 @@ async def create_student(
 async def get_student(
     id: int, current_user: str = Depends(token_service.get_auth_cookie)
 ):
-    result = await student_service.get_student(id)
+    student = await cache_storage.get(f"{STUDENT_CACHE_PREFIX_KEY}:{id}")
 
-    if result is None:
-        raise HTTPException(status_code=404, detail="Student not found")
+    if student:
+        return json.loads(student)
+    else:
+        student = await student_service.get_student(id)
 
-    return result
+        if student is None:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        await cache_storage.set(
+            f"{STUDENT_CACHE_PREFIX_KEY}:{id}", json.dumps(student.as_dict())
+        )
+
+    return student
 
 
 @student_router.delete("/delete_student/{id}", status_code=HTTPStatus.NO_CONTENT)
@@ -44,6 +56,8 @@ async def delete_student(
 
     if result.status == "error":
         raise HTTPException(status_code=404, detail=result.message)
+
+    await cache_storage.delete(f"{STUDENT_CACHE_PREFIX_KEY}:{id}")
 
     return result
 
@@ -56,6 +70,8 @@ async def update_student(
 
     if result.status == "error":
         raise HTTPException(status_code=404, detail=result.message)
+
+    await cache_storage.delete(f"{STUDENT_CACHE_PREFIX_KEY}:{id}")
 
     return result
 

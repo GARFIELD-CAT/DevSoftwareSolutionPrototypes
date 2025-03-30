@@ -33,11 +33,20 @@ class CourseService(MainService):
                 status="error", message=f"Ошибка при создании курса: {e}"
             )
 
-    async def get_course(self, course_id: int) -> Optional[Course]:
+    async def get_course(
+        self, course_id: Optional[int] = None, course_name: Optional[str] = None
+    ) -> Optional[Course]:
         session = self._get_async_session()
 
         async with session() as db:
-            course = await db.execute(select(Course).where(Course.id == course_id))
+            if course_id:
+                course = await db.execute(select(Course).where(Course.id == course_id))
+            elif course_name:
+                course = await db.execute(
+                    select(Course).where(Course.name == course_name)
+                )
+            else:
+                return None
 
             return course.scalars().one_or_none()
 
@@ -50,10 +59,12 @@ class CourseService(MainService):
             await db.commit()
 
             if result.rowcount > 0:
+                print(f"success: Course {course_id=} deleted successfully")
                 return OperationStatus(
                     status="success", message="Course deleted successfully"
                 )
             else:
+                print(f"error: Course {course_id=} not found")
                 return OperationStatus(status="error", message="Course not found")
 
     async def update_course(self, course_id: int, **kwargs) -> OperationStatus:
@@ -68,7 +79,8 @@ class CourseService(MainService):
                 return OperationStatus(status="error", message="Course not found")
 
             for key, value in kwargs.items():
-                setattr(course, key, value)
+                if value:
+                    setattr(course, key, value)
 
             await db.commit()
 
